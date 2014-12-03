@@ -100,8 +100,23 @@ public :
 		const UnicodeStr& battery,
 		const UnicodeStr& network,
 		Top3Relocation* relocation);
+	
+	int CalcSupplyPrice(const UnicodeStr& brand,
+		const UnicodeStr& screen,
+		const UnicodeStr& pcamera,
+		const UnicodeStr& standby,
+		const UnicodeStr& ram,
+		const UnicodeStr& rom,
+		const UnicodeStr& resolve,
+		const UnicodeStr& scamera,
+		const UnicodeStr& coreNum,
+		const UnicodeStr& cpuFreq,
+		const UnicodeStr& battery,
+		const UnicodeStr& network,
+		Top3Relocation* relocation);
 
 	CRichEditCtrl mDcjgRichEdit;
+	CRichEditCtrl mZgjgRichEdit;
 	std::map<UnicodeStr,ValueItem> mBrandTable;
 	std::map<UnicodeStr,ValueItem> mScreenTable;
 	std::map<UnicodeStr,ValueItem> mPCameraTable;

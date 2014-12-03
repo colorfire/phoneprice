@@ -315,6 +315,101 @@ int CPhonePriceDlg::CalcPrice(const UnicodeStr& brand,
 	return int(sumPrice/nn);
 }
 
+int CPhonePriceDlg::CalcSupplyPrice(const UnicodeStr& brand,
+			  const UnicodeStr& screen,
+			  const UnicodeStr& pcamera,
+			  const UnicodeStr& standby,
+			  const UnicodeStr& ram,
+			  const UnicodeStr& rom,
+			  const UnicodeStr& resolve,
+			  const UnicodeStr& scamera,
+			  const UnicodeStr& coreNum,
+			  const UnicodeStr& cpuFreq,
+			  const UnicodeStr& battery,
+			  const UnicodeStr& network,
+			  Top3Relocation* relocation){
+	char buffer[16]={0};
+	ValueItem viBrand=defBrandVItem;
+	std::map<UnicodeStr,ValueItem>::const_iterator cit=mBrandTable.find(brand);
+	if(cit!=mBrandTable.end()){
+		viBrand=cit->second;
+	}else{
+		// MessageBoxW((LPCTSTR)brand.c_str(),L"No brand");
+	}
+	ValueItem viScreen=defScreenVItem;
+	cit=mScreenTable.find(screen);
+	if(cit!=mScreenTable.end()){
+		viScreen=cit->second;
+	}else{
+		// MessageBoxW((LPCTSTR)screen.c_str(),L"No Screen");
+	}
+	ValueItem viPCamera=defPcameraVItem;
+	cit=mPCameraTable.find(pcamera);
+	// MessageBox(LPCTSTR(pcamera.c_str()));
+	if(cit!=mPCameraTable.end()){
+		viPCamera=cit->second;
+	}else{
+		//MessageBoxW((LPCTSTR)pcamera.c_str(),L"No PCamera");
+	}
+	double standbyW=lookupValue(mStandbyTable,standby,defStandbyW);
+	double ramW=lookupValue(mRamTable,ram,defRamW);
+	double romW=lookupValue(mRomTable,rom,defRomW);
+	double resolveW=lookupValue(mResolveTable,resolve,defResolveW);
+	double scameraW=lookupValue(mSCameraTable,scamera,defSCameraW);
+	double coreNumW=lookupValue(mCoreNumTable,coreNum,defCoreNumW);
+	double cpuFreqW=lookupValue(mCpuTable,cpuFreq,defCpuW);
+	double batteryW=lookupValue(mBatteryTable,battery,defBatteryW);
+	double networkW=lookupValue(mNetworkTable,network,defNetworkW);
+    double totalProductW=viBrand.weight*viScreen.weight*viPCamera.weight;
+	totalProductW=totalProductW*standbyW*ramW*romW*resolveW*scameraW*coreNumW*cpuFreqW*batteryW*networkW;
+	int len=sprintf(buffer,"%d%d%d",viBrand.targetId,viScreen.targetId,viPCamera.targetId);
+	std::string reTarget(buffer,len);
+	
+	std::map<std::string,Top3Relocation>::const_iterator ncit=mRelocateTable.find(reTarget);
+	if(ncit==mRelocateTable.end()){
+		// MessageBoxA(NULL,reTarget.c_str(),"No result",MB_OK);
+		return 0;
+	}
+	// MessageBoxA(NULL,reTarget.c_str(),"got result",MB_OK);
+	if(relocation){
+		*relocation=ncit->second;
+	}
+	int nn=0;
+	double sumPrice=0;
+	char debugBuffer[1024]={0};
+
+	if(ncit->second.top1.rank!=0x7FFFFFFF){
+		double w=ncit->second.top1.weight;
+		int p=ncit->second.top1.supplyPrice;
+		sumPrice+=p*(totalProductW/w);
+		nn+=1;
+
+	}
+	if(ncit->second.top2.rank!=0x7FFFFFFF){
+		double w=ncit->second.top2.weight;
+		int p=ncit->second.top2.supplyPrice;
+		sumPrice+=p*(totalProductW/w);
+		nn+=1;
+	}
+	if(ncit->second.top3.rank!=0x7FFFFFFF){
+		double w=ncit->second.top3.weight;
+		int p=ncit->second.top3.supplyPrice;
+		sumPrice+=p*(totalProductW/w);
+		nn+=1;
+	}
+	/*
+	int len2=sprintf(debugBuffer,"reTarget[%s],ranks[%d,%d,%d],prices[%d,%d,%d],weights=[%f,%f,%f],totalPrice:%f,numUsed=%d,totalWeight=%f",
+		reTarget.c_str(),
+		ncit->second.top1.rank,ncit->second.top2.rank,ncit->second.top3.rank,
+		ncit->second.top1.price,ncit->second.top2.price,ncit->second.top3.price,
+			ncit->second.top1.weight,ncit->second.top2.weight,ncit->second.top3.weight,
+			sumPrice,nn,totalProductW);
+	debugBuffer[len2]=0;
+	MessageBoxA(NULL,debugBuffer,NULL,MB_OK);
+	*/
+	return int(sumPrice/nn);
+}
+
 
 CPhonePriceDlg::CPhonePriceDlg(CWnd* pParent /*=NULL*/)
 	: CDialog(CPhonePriceDlg::IDD, pParent)
@@ -345,6 +440,7 @@ void CPhonePriceDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_DCRL_COMBO, mDcrlCombo);
 	DDX_Control(pDX, IDC_WLLX_COMBO, mWllxCombo);
 	DDX_Control(pDX, IDC_RICHEDIT22, mDcjgRichEdit);
+	DDX_Control(pDX, IDC_RICHEDIT23, mZgjgRichEdit);
 	DDX_Control(pDX, IDC_STATIC_RT1, mDBTop1Text);
 	DDX_Control(pDX, IDC_RT2_STATIC, mDBTop2Text);
 	DDX_Control(pDX, IDC_RT3_STATIC, mDBTop3Text);
@@ -423,11 +519,13 @@ BOOL CPhonePriceDlg::OnInitDialog()
 
 	CHARFORMAT cf;
 	mDcjgRichEdit.GetDefaultCharFormat(cf);
+	mZgjgRichEdit.GetDefaultCharFormat(cf);
 	//ZeroMemory(&cf,sizeof(CHARFORMAT));
 	cf.dwMask = CFM_COLOR|CFM_BOLD; 
 	cf.dwEffects &= ~CFE_AUTOCOLOR;
 	cf.crTextColor=RGB(255,0,0);  //the text color
 	mDcjgRichEdit.SetDefaultCharFormat(cf);
+	mZgjgRichEdit.SetDefaultCharFormat(cf);
 	//mDcjgRichEdit.SetWindowText(L"");
     UpdatePrice();
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
@@ -520,13 +618,21 @@ void CPhonePriceDlg::UpdatePrice(){
 	Top3Relocation relocation;
 
 	int price=CalcPrice(brand,screen,pcamera,standby,ram,rom,resolve,scamera,coreNum,cpuFreq,battery,network,&relocation);
+	int supplyPrice=CalcSupplyPrice(brand,screen,pcamera,standby,ram,rom,resolve,scamera,coreNum,cpuFreq,battery,network,&relocation);
 	CString priceStr;
+	CString supplyPriceStr;
 	if(price==0){
 		priceStr=L"N/A";
 	}else{
 		priceStr.Format(L"%d",price);
 	}
+	if(supplyPrice==0){
+		supplyPriceStr=L"N/A";
+	}else{
+		supplyPriceStr.Format(L"%d",supplyPrice);
+	}
 	mDcjgRichEdit.SetWindowText(priceStr);
+	mZgjgRichEdit.SetWindowText(supplyPriceStr);
 	CString rtTop1;
 	CString rtTop2;
 	CString rtTop3;

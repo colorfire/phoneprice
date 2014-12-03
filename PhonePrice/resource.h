@@ -18,13 +18,14 @@
 #define IDC_HXS_COMBO                   1011
 #define IDC_CPU_COMBO                   1012
 #define IDC_DCRL_COMBO                  1014
-#define IDC_DCRL_COMBO2                 1015
 #define IDC_WLLX_COMBO                  1015
 #define IDC_RICHEDIT22                  1018
 #define IDC_BUTTON_BTACH                1019
 #define IDC_STATIC_RT1                  1020
 #define IDC_RT2_STATIC                  1021
 #define IDC_RT3_STATIC                  1022
+#define IDC_RICHEDIT3                   1023
+#define IDC_RICHEDIT23                  1023
 
 // Next default values for new objects
 // 
